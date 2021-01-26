@@ -24,14 +24,13 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
 import android.util.Rational
 import android.view.View
 import android.widget.Button
 import android.widget.ScrollView
-
+import androidx.appcompat.app.AppCompatActivity
 import com.example.android.pictureinpicture.widget.MovieView
-
 
 /**
  * Demonstrates usage of Picture-in-Picture when using
@@ -44,14 +43,14 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
         private val TAG = "MediaSessionPlaybackActivity"
 
         val MEDIA_ACTIONS_PLAY_PAUSE =
-                PlaybackStateCompat.ACTION_PLAY or
-                        PlaybackStateCompat.ACTION_PAUSE or
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE
+            PlaybackStateCompat.ACTION_PLAY or
+                PlaybackStateCompat.ACTION_PAUSE or
+                PlaybackStateCompat.ACTION_PLAY_PAUSE
 
         val MEDIA_ACTIONS_ALL =
-                MEDIA_ACTIONS_PLAY_PAUSE or
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+            MEDIA_ACTIONS_PLAY_PAUSE or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
     }
 
     private lateinit var mSession: MediaSessionCompat
@@ -79,22 +78,24 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
         override fun onMovieStarted() {
             // We are playing the video now. Update the media session state and the PiP window will
             // update the actions.
-            mMovieView?.let { view ->
+            mMovieView.let { view ->
                 updatePlaybackState(
-                        PlaybackStateCompat.STATE_PLAYING,
-                        view.getCurrentPosition(),
-                        view.getVideoResourceId())
+                    PlaybackStateCompat.STATE_PLAYING,
+                    view.getCurrentPosition(),
+                    view.getVideoResourceId()
+                )
             }
         }
 
         override fun onMovieStopped() {
             // The video stopped or reached its end. Update the media session state and the PiP window will
             // update the actions.
-            mMovieView?.let { view ->
+            mMovieView.let { view ->
                 updatePlaybackState(
-                        PlaybackStateCompat.STATE_PAUSED,
-                        view.getCurrentPosition(),
-                        view.getVideoResourceId())
+                    PlaybackStateCompat.STATE_STOPPED,
+                    view.getCurrentPosition(),
+                    view.getVideoResourceId()
+                )
             }
         }
 
@@ -102,7 +103,6 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
             // The MovieView wants us to minimize it. We enter Picture-in-Picture mode now.
             minimize()
         }
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,13 +129,14 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
     private fun initializeMediaSession() {
         mSession = MediaSessionCompat(this, TAG)
         mSession.setFlags(
-                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+            MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+        )
         mSession.isActive = true
         MediaControllerCompat.setMediaController(this, mSession.controller)
 
         val metadata = MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, mMovieView.title)
-                .build()
+            .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, mMovieView.title)
+            .build()
         mSession.setMetadata(metadata)
 
         val mMediaSessionCallback = MediaSessionCallback(mMovieView)
@@ -146,10 +147,11 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
         else
             PlaybackStateCompat.STATE_PAUSED
         updatePlaybackState(
-                state,
-                MEDIA_ACTIONS_ALL,
-                mMovieView.getCurrentPosition(),
-                mMovieView.getVideoResourceId())
+            state,
+            MEDIA_ACTIONS_ALL,
+            mMovieView.getCurrentPosition(),
+            mMovieView.getVideoResourceId()
+        )
     }
 
     override fun onStop() {
@@ -177,11 +179,15 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             adjustFullScreen(resources.configuration)
+        } else {
+            minimize()
         }
     }
 
     override fun onPictureInPictureModeChanged(
-            isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (!isInPictureInPictureMode) {
             // Show the video controls if the video is not playing
@@ -211,7 +217,8 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
     private fun adjustFullScreen(config: Configuration) {
         val decorView = window.decorView
         if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            decorView.systemUiVisibility =
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             mScrollView.visibility = View.GONE
             mMovieView.setAdjustViewBounds(false)
         } else {
@@ -231,22 +238,25 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
      * @param mediaId The media id related to the video in the media session.
      */
     private fun updatePlaybackState(
-            @PlaybackStateCompat.State state: Int,
-            position: Int,
-            mediaId: Int) {
+        @PlaybackStateCompat.State state: Int,
+        position: Int,
+        mediaId: Int
+    ) {
         val actions = mSession.controller.playbackState.actions
         updatePlaybackState(state, actions, position, mediaId)
     }
 
     private fun updatePlaybackState(
-            @PlaybackStateCompat.State state: Int,
-            playbackActions: Long,
-            position: Int,
-            mediaId: Int) {
+        @PlaybackStateCompat.State state: Int,
+        playbackActions: Long,
+        position: Int,
+        mediaId: Int
+    ) {
         val builder = PlaybackStateCompat.Builder()
-                .setActions(playbackActions)
-                .setActiveQueueItemId(mediaId.toLong())
-                .setState(state, position.toLong(), 1.0f)
+            .setActions(playbackActions)
+            .setActiveQueueItemId(mediaId.toLong())
+            .setState(state, position.toLong(), 1.0f)
+        Log.d("Tadeas", "Video position: $position")
         mSession.setPlaybackState(builder.build())
     }
 
@@ -255,8 +265,8 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
      * Simulates a playlist that will disable actions when you cannot skip through the playlist in a
      * certain direction.
      */
-    private inner class MediaSessionCallback(private val movieView: MovieView) : MediaSessionCompat.Callback() {
-        private val PLAYLIST_SIZE = 2
+    private inner class MediaSessionCallback(private val movieView: MovieView) :
+        MediaSessionCompat.Callback() {
 
         private var indexInPlaylist: Int = 0
 
@@ -274,42 +284,31 @@ class MediaSessionPlaybackActivity : AppCompatActivity() {
             movieView.pause()
         }
 
+        /**
+         *
+         */
         override fun onSkipToNext() {
             super.onSkipToNext()
-            movieView.startVideo()
-            if( indexInPlaylist < PLAYLIST_SIZE ) {
-                indexInPlaylist++
-                if (indexInPlaylist >= PLAYLIST_SIZE) {
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING,
-                            MEDIA_ACTIONS_PLAY_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-                            movieView.getCurrentPosition(),
-                            movieView.getVideoResourceId())
-                } else {
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING,
-                            MEDIA_ACTIONS_ALL,
-                            movieView.getCurrentPosition(),
-                            movieView.getVideoResourceId())
-                }
-            }
+            movieView.fastForward()
+
+            updatePlaybackState(
+                PlaybackStateCompat.STATE_PLAYING,
+                MEDIA_ACTIONS_ALL,
+                movieView.getCurrentPosition(),
+                movieView.getVideoResourceId()
+            )
+
         }
 
         override fun onSkipToPrevious() {
             super.onSkipToPrevious()
-            movieView.startVideo()
-            if( indexInPlaylist > 0 ) {
-                indexInPlaylist--
-                if (indexInPlaylist <= 0) {
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING,
-                            MEDIA_ACTIONS_PLAY_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
-                            movieView.getCurrentPosition(),
-                            movieView.getVideoResourceId())
-                } else {
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING,
-                            MEDIA_ACTIONS_ALL,
-                            movieView.getCurrentPosition(),
-                            movieView.getVideoResourceId())
-                }
-            }
+            movieView.fastRewind()
+            updatePlaybackState(
+                PlaybackStateCompat.STATE_PLAYING,
+                MEDIA_ACTIONS_ALL,
+                movieView.getCurrentPosition(),
+                movieView.getVideoResourceId()
+            )
         }
     }
 
