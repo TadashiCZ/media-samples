@@ -21,7 +21,6 @@ import android.graphics.Color
 import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Message
-import androidx.annotation.RawRes
 import android.transition.TransitionManager
 import android.util.AttributeSet
 import android.util.Log
@@ -29,8 +28,10 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
+import android.view.View.OnClickListener
 import android.widget.ImageButton
 import android.widget.RelativeLayout
+import androidx.annotation.RawRes
 import com.example.android.pictureinpicture.R
 import java.io.IOException
 import java.lang.ref.WeakReference
@@ -298,14 +299,14 @@ class MovieView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
     /**
      * Fast-forward the video.
      */
-    private fun fastForward() {
+    fun fastForward() {
         mMediaPlayer?.let { it.seekTo(it.currentPosition + FAST_FORWARD_REWIND_INTERVAL) }
     }
 
     /**
      * Fast-rewind the video.
      */
-    private fun fastRewind() {
+    fun fastRewind() {
         mMediaPlayer?.let { it.seekTo(it.currentPosition - FAST_FORWARD_REWIND_INTERVAL) }
     }
 

@@ -71,7 +71,7 @@
         android:background="?android:attr/selectableItemBackground"
         android:contentDescription="@string/minimize"
         android:padding="16dp"
-        android:src="@drawable/ic_minimize_24dp"
+        android:src="@drawable/ic_picture_in_picture_alt"
         android:visibility="invisible"/>
 
 </merge>

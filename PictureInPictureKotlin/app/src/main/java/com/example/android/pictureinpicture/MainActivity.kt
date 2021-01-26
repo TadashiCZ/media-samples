@@ -25,17 +25,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Bundle
-import androidx.annotation.DrawableRes
-import androidx.appcompat.app.AppCompatActivity
 import android.util.Rational
 import android.view.View
 import android.widget.Button
 import android.widget.ScrollView
+import androidx.annotation.DrawableRes
+import androidx.appcompat.app.AppCompatActivity
 import com.example.android.pictureinpicture.widget.MovieView
 import java.util.*
-
 
 /**
  * Demonstrates usage of Picture-in-Picture mode on phones and tablets.
@@ -56,8 +54,9 @@ class MainActivity : AppCompatActivity() {
         /** The request code for pause action PendingIntent.  */
         private const val REQUEST_PAUSE = 2
 
-        /** The request code for info action PendingIntent.  */
-        private const val REQUEST_INFO = 3
+        private const val REQUEST_FORWARD = 3
+
+        private const val REQUEST_BACKWARD = 4
 
         /** The intent extra value for play action.  */
         private const val CONTROL_TYPE_PLAY = 1
@@ -65,6 +64,9 @@ class MainActivity : AppCompatActivity() {
         /** The intent extra value for pause action.  */
         private const val CONTROL_TYPE_PAUSE = 2
 
+        private const val CONTROL_TYPE_FORWARD = 3
+
+        private const val CONTROL_TYPE_BACKWARDS = 4
     }
 
     /** The arguments to be used for Picture-in-Picture mode.  */
@@ -88,6 +90,8 @@ class MainActivity : AppCompatActivity() {
                 when (intent.getIntExtra(EXTRA_CONTROL_TYPE, 0)) {
                     CONTROL_TYPE_PLAY -> mMovieView.play()
                     CONTROL_TYPE_PAUSE -> mMovieView.pause()
+                    CONTROL_TYPE_FORWARD -> mMovieView.fastForward()
+                    CONTROL_TYPE_BACKWARDS -> mMovieView.fastRewind()
                 }
             }
         }
@@ -104,22 +108,25 @@ class MainActivity : AppCompatActivity() {
         override fun onMovieStarted() {
             // We are playing the video now. In PiP mode, we want to show an action item to pause
             // the video.
-            updatePictureInPictureActions(R.drawable.ic_pause_24dp, labelPause,
-                    CONTROL_TYPE_PAUSE, REQUEST_PAUSE)
+            updatePictureInPictureActions(
+                R.drawable.ic_pause_24dp, labelPause,
+                CONTROL_TYPE_PAUSE, REQUEST_PAUSE
+            )
         }
 
         override fun onMovieStopped() {
             // The video stopped or reached its end. In PiP mode, we want to show an action item
             // to play the video.
-            updatePictureInPictureActions(R.drawable.ic_play_arrow_24dp, labelPlay,
-                    CONTROL_TYPE_PLAY, REQUEST_PLAY)
+            updatePictureInPictureActions(
+                R.drawable.ic_play_arrow_24dp, labelPlay,
+                CONTROL_TYPE_PLAY, REQUEST_PLAY
+            )
         }
 
         override fun onMovieMinimized() {
             // The MovieView wants us to minimize it. We enter Picture-in-Picture mode now.
             minimize()
         }
-
     }
 
     /**
@@ -134,29 +141,60 @@ class MainActivity : AppCompatActivity() {
      * *
      * @param requestCode The request code for the [PendingIntent].
      */
-    internal fun updatePictureInPictureActions(@DrawableRes iconId: Int, title: String,
-                                               controlType: Int, requestCode: Int) {
+    internal fun updatePictureInPictureActions(
+        @DrawableRes iconId: Int,
+        title: String,
+        controlType: Int,
+        requestCode: Int
+    ) {
         val actions = ArrayList<RemoteAction>()
 
-        // This is the PendingIntent that is invoked when a user clicks on the action item.
-        // You need to use distinct request codes for play and pause, or the PendingIntent won't
-        // be properly updated.
-        val intent = PendingIntent.getBroadcast(this@MainActivity,
-                requestCode, Intent(ACTION_MEDIA_CONTROL)
-                .putExtra(EXTRA_CONTROL_TYPE, controlType), 0)
-        val icon = Icon.createWithResource(this@MainActivity, iconId)
-        actions.add(RemoteAction(icon, title, title, intent))
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this@MainActivity, R.drawable.ic_fast_rewind_24dp),
+                getString(R.string.fast_rewind),
+                getString(R.string.fast_rewind),
+                PendingIntent.getBroadcast(
+                    this@MainActivity,
+                    REQUEST_BACKWARD,
+                    Intent(ACTION_MEDIA_CONTROL).putExtra(
+                        EXTRA_CONTROL_TYPE,
+                        CONTROL_TYPE_BACKWARDS
+                    ),
+                    0
+                )
+            )
+        )
+
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this@MainActivity, iconId),
+                title,
+                title,
+                PendingIntent.getBroadcast(
+                    this@MainActivity,
+                    requestCode,
+                    Intent(ACTION_MEDIA_CONTROL).putExtra(EXTRA_CONTROL_TYPE, controlType),
+                    0
+                )
+            )
+        )
 
         // Another action item. This is a fixed action.
-        actions.add(RemoteAction(
-                Icon.createWithResource(this@MainActivity, R.drawable.ic_info_24dp),
-                getString(R.string.info), getString(R.string.info_description),
-                PendingIntent.getActivity(this@MainActivity, REQUEST_INFO,
-                        Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.info_uri))),
-                        0)))
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this@MainActivity, R.drawable.ic_fast_forward_24dp),
+                getString(R.string.fast_forward), getString(R.string.fast_forward),
+                PendingIntent.getBroadcast(
+                    this@MainActivity,
+                    REQUEST_FORWARD,
+                    Intent(ACTION_MEDIA_CONTROL).putExtra(EXTRA_CONTROL_TYPE, CONTROL_TYPE_FORWARD),
+                    0
+                )
+            )
+        )
 
         mPictureInPictureParamsBuilder.setActions(actions)
-
         // This is how you can update action items (or aspect ratio) for Picture-in-Picture mode.
         // Note this call can happen even when the app is not in PiP mode. In that case, the
         // arguments will be used for at the next call of #enterPictureInPictureMode.
@@ -180,6 +218,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.pip).setOnClickListener { minimize() }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        minimize()
+    }
+
     override fun onStop() {
         // On entering Picture-in-Picture mode, onPause is called, but not onStop.
         // For this reason, this is the place where we should pause the video playback.
@@ -200,6 +243,7 @@ class MainActivity : AppCompatActivity() {
         adjustFullScreen(newConfig)
     }
 
+    // Activity is losing focus when going to the PIP mode
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -208,7 +252,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPictureInPictureModeChanged(
-            isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
             // Starts receiving events from action items in PiP mode.
@@ -243,11 +289,11 @@ class MainActivity : AppCompatActivity() {
         val decorView = window.decorView
         if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                    View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             mScrollView.visibility = View.GONE
             mMovieView.setAdjustViewBounds(false)
         } else {
